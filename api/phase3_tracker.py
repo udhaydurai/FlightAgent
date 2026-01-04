@@ -11,6 +11,8 @@ from api.database import TravelTrackerDB
 from api.services.open_jaw_search import OpenJawSearch
 from api.utils.config import get_dates, get_preferences
 from api.utils.price_tracker import should_send_alert
+from api.utils.logger import logger
+from api.utils.errors import APIError, DatabaseError
 
 # Try to import email notifier (optional)
 try:
@@ -47,17 +49,27 @@ class PriceTracker:
         Returns:
             Dictionary with tracking results
         """
-        print(f"Tracking prices for: {departure_date} → {return_date}")
-        print("-" * 70)
+        logger.info(f"Tracking prices for: {departure_date} → {return_date}")
         
         # Search for best open-jaw option
-        result = self.searcher.search_best_open_jaw(
-            departure_date=departure_date,
-            return_date=return_date,
-            adults=1
-        )
+        try:
+            result = self.searcher.search_best_open_jaw(
+                departure_date=departure_date,
+                return_date=return_date,
+                adults=1
+            )
+        except APIError as e:
+            logger.error(f"API error during flight search: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"API error: {str(e)}",
+                "departure_date": departure_date,
+                "return_date": return_date,
+                "error": str(e)
+            }
         
         if not result.get("success") or not result.get("best_option"):
+            logger.warning(f"No flights found for {departure_date} → {return_date}")
             return {
                 "success": False,
                 "message": "No flights found",
@@ -87,16 +99,14 @@ class PriceTracker:
         should_alert = should_send_alert(current_price, last_price)
         
         # Display results
-        print(f"Current Price: {currency} ${current_price:.2f}")
+        logger.info(f"Current Price: {currency} ${current_price:.2f}")
         
         if last_price:
             price_drop = comparison.get("price_drop", 0)
             if price_drop > 0:
-                print(f"✅ Price dropped by {currency} ${price_drop:.2f}!")
-                print(f"   Previous: {currency} ${last_price:.2f}")
+                logger.info(f"Price dropped by {currency} ${price_drop:.2f}! Previous: {currency} ${last_price:.2f}")
             elif price_drop < 0:
-                print(f"⚠️  Price increased by {currency} ${abs(price_drop):.2f}")
-                print(f"   Previous: {currency} ${last_price:.2f}")
+                logger.warning(f"Price increased by {currency} ${abs(price_drop):.2f}. Previous: {currency} ${last_price:.2f}")
             else:
                 print(f"➡️  Price unchanged: {currency} ${current_price:.2f}")
         else:

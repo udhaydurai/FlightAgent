@@ -4,8 +4,41 @@ from typing import Optional, Dict, Any, List
 from amadeus import Client, ResponseError
 from dotenv import load_dotenv
 from api.utils.flight_filter import filter_flights, sort_by_preference
+from api.utils.logger import logger
+from api.utils.errors import APIError, ValidationError
+from api.utils.validators import (
+    validate_airport_code,
+    validate_date,
+    validate_passenger_count,
+    validate_price
+)
 
-load_dotenv()
+# Optional retry logic - graceful fallback if tenacity not installed
+try:
+    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+    RETRY_AVAILABLE = True
+except ImportError:
+    RETRY_AVAILABLE = False
+    # Create a no-op decorator if tenacity is not available
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    # Create dummy functions for the decorator arguments
+    def stop_after_attempt(*args, **kwargs):
+        return None
+    def wait_exponential(*args, **kwargs):
+        return None
+    def retry_if_exception_type(*args, **kwargs):
+        return None
+    logger.warning("tenacity not installed - retry logic disabled. Install with: pip install tenacity")
+
+# Load environment variables (gracefully handle permission errors)
+try:
+    load_dotenv()
+except (PermissionError, FileNotFoundError):
+    # .env file not accessible (e.g., in sandbox or tests) - use environment variables directly
+    pass
 
 
 class AmadeusClient:
@@ -29,6 +62,12 @@ class AmadeusClient:
             hostname=env  # 'test' or 'production'
         )
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((ResponseError, ConnectionError, TimeoutError)),
+        reraise=True
+    )
     def search_flights(
         self,
         origin: str,
@@ -53,8 +92,23 @@ class AmadeusClient:
         
         Returns:
             Dictionary containing flight offers or error information
+        
+        Raises:
+            APIError: If API call fails after retries
         """
         try:
+            # Validate inputs (raise ValidationError directly, don't wrap in APIError)
+            origin = validate_airport_code(origin)
+            destination = validate_airport_code(destination)
+            departure_date = validate_date(departure_date)
+            if return_date:
+                return_date = validate_date(return_date)
+            adults = validate_passenger_count(adults)
+            if max_price:
+                max_price = validate_price(max_price)
+            
+            logger.info(f"Searching flights: {origin} -> {destination} on {departure_date}")
+            
             # Build search parameters
             params = {
                 "originLocationCode": origin,
@@ -87,6 +141,9 @@ class AmadeusClient:
                     if len(segments) == 1:
                         filtered_data.append(offer)
                 flight_data = filtered_data
+                logger.debug(f"Filtered to {len(filtered_data)} nonstop flights from {len(response.data)} total")
+            
+            logger.info(f"Found {len(flight_data) if flight_data else 0} flights")
             
             return {
                 "success": True,
@@ -94,15 +151,24 @@ class AmadeusClient:
                 "dictionaries": response.dictionaries if hasattr(response, 'dictionaries') else {}
             }
         
+        except ValidationError:
+            # Re-raise validation errors as-is (don't wrap in APIError)
+            raise
         except ResponseError as error:
-            return {
-                "success": False,
-                "error": {
-                    "code": error.response.status_code,
-                    "description": error.description,
-                    "message": str(error)
-                }
-            }
+            status_code = error.response.status_code if hasattr(error, 'response') and hasattr(error.response, 'status_code') else None
+            error_msg = f"Amadeus API error: {error.description if hasattr(error, 'description') else str(error)}"
+            logger.error(f"{error_msg} (Status: {status_code})", exc_info=True)
+            raise APIError(
+                message=error_msg,
+                status_code=status_code,
+                original_error=error
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in flight search: {e}", exc_info=True)
+            raise APIError(
+                message=f"Unexpected error: {str(e)}",
+                original_error=e
+            )
     
     def get_flight_offers(
         self,
