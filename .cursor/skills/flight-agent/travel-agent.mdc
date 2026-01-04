@@ -1,0 +1,18 @@
+---
+description: Rules for the Spring Break Flight Agent
+globs: ["**/*.py"]
+alwaysApply: true
+---
+# Travel Agent Constraints
+- **Travel Window:** April 1-10, 2026 (6-day trip duration).
+- **Origin:** San Diego (SAN).
+- **Routes:** Open-jaw multi-city itinerary:
+  - **Option 1:** Fly SAN → Washington D.C. (IAD/DCA), travel by road/train to New York (JFK/LGA/EWR), fly NYC → SAN.
+  - **Option 2:** Fly SAN → New York (JFK/LGA/EWR), travel by road/train to Washington D.C. (IAD/DCA), fly WAS → SAN.
+  - System searches both options and returns the best price combination.
+- **No Red-Eyes:** Exclude any flights departing before 7 AM or after 9 PM.
+- **Min Layovers:** 
+  - WAS-NYC routes: Only nonstop flights allowed.
+  - Other routes: Max 1 stop (prefer nonstop, exclude >1 stop).
+- **Daily Logic:** Always compare against the `last_checked_price` in the database before sending an alert.
+- **Multi-Source:** Gather data from at least two sources (e.g., Amadeus API and a secondary scraper).

@@ -1,0 +1,5 @@
+departure_date,return_date,inbound_airport,outbound_airport,total_price,currency,description
+2026-04-04,2026-04-10,JFK,DCA,236.96,EUR,"Fly SAN → NYC (JFK/LGA/EWR), travel NYC → DC by road/train, fly DC (DCA/IAD) → SAN"
+2026-04-05,2026-04-11,DCA,JFK,236.96,EUR,"Fly SAN → DC (DCA/IAD), travel DC → NYC by road/train, fly NYC (JFK/LGA/EWR) → SAN"
+2026-04-03,2026-04-09,JFK,DCA,245.56,EUR,"Fly SAN → NYC (JFK/LGA/EWR), travel NYC → DC by road/train, fly DC (DCA/IAD) → SAN"
+2026-04-06,2026-04-12,DCA,JFK,245.56,EUR,"Fly SAN → DC (DCA/IAD), travel DC → NYC by road/train, fly NYC (JFK/LGA/EWR) → SAN"

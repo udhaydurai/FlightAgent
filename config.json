@@ -1,0 +1,51 @@
+{
+  "trip": {
+    "origin": "SAN",
+    "destinations": {
+      "washington": ["DCA", "IAD"],
+      "new_york": ["JFK", "LGA", "EWR"],
+      "all_airports": ["DCA", "IAD", "JFK", "LGA", "EWR"]
+    },
+    "open_jaw": {
+      "enabled": true,
+      "description": "Flexible routing: Search both SAN -> DC / NYC -> SAN AND SAN -> NYC / DC -> SAN to find the best value",
+      "options": [
+        {
+          "inbound": "washington",
+          "outbound": "new_york",
+          "description": "Fly SAN → DC (DCA/IAD), travel DC → NYC by road/train, fly NYC (JFK/LGA/EWR) → SAN",
+          "inbound_airports": ["DCA", "IAD"],
+          "outbound_airports": ["JFK", "LGA", "EWR"]
+        },
+        {
+          "inbound": "new_york",
+          "outbound": "washington",
+          "description": "Fly SAN → NYC (JFK/LGA/EWR), travel NYC → DC by road/train, fly DC (DCA/IAD) → SAN",
+          "inbound_airports": ["JFK", "LGA", "EWR"],
+          "outbound_airports": ["DCA", "IAD"]
+        }
+      ]
+    },
+    "dates": {
+      "year": 2026,
+      "month": 4,
+      "spring_break_window": {
+        "start": "2026-04-03",
+        "end": "2026-04-06"
+      },
+      "trip_duration_days": 6
+    },
+    "preferences": {
+      "no_red_eyes": true,
+      "red_eye_departure_san_before": "07:00",
+      "red_eye_arrival_east_coast_after": "22:00",
+      "nonstop_required": true,
+      "max_stops": 0,
+      "was_nyc_nonstop_only": true,
+      "prefer_nonstop": true,
+      "ground_transport": "road_or_train",
+      "alert_price_drop_threshold": 10,
+      "itinerary_split_days": 3
+    }
+  }
+}
