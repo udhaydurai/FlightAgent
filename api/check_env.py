@@ -16,7 +16,7 @@ def check_env_file():
         print("\nTo create it, run:")
         print(f"  cd {base_path}")
         print("  cat > .env << 'EOF'")
-        print("  AMADEUS_API_KEY=GJGyBTf1laUXRgFlye2cN0oBsPEtP8wG")
+        print("  AMADEUS_API_KEY=your_api_key_here")
         print("  AMADEUS_API_SECRET=your_secret_here")
         print("  AMADEUS_ENV=test")
         print("  EOF")
