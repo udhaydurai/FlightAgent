@@ -200,6 +200,20 @@ Alert triggered when price drops by more than $10.
                 server.login(self.sender_email, self.sender_password)
                 server.send_message(msg)
             return True
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = str(e)
+            if "BadCredentials" in error_msg or "535" in error_msg:
+                print(f"❌ Error sending email: Gmail authentication failed")
+                print(f"   Gmail requires an App Password, not your regular password.")
+                print(f"   To create an App Password:")
+                print(f"   1. Go to: https://myaccount.google.com/apppasswords")
+                print(f"   2. Sign in and create a new app password for 'Mail'")
+                print(f"   3. Copy the 16-character password")
+                print(f"   4. Update SENDER_PASSWORD in your .env file (or GitHub Secrets)")
+                print(f"   5. Make sure 2-Step Verification is enabled on your Google account")
+            else:
+                print(f"❌ Error sending email: {e}")
+            return False
         except Exception as e:
             print(f"❌ Error sending email: {e}")
             return False

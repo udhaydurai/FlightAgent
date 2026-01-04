@@ -60,7 +60,8 @@ class AmadeusClient:
                 "originLocationCode": origin,
                 "destinationLocationCode": destination,
                 "departureDate": departure_date,
-                "adults": adults
+                "adults": adults,
+                "currencyCode": "USD"  # Request prices in USD
             }
             
             if return_date:
@@ -142,7 +143,8 @@ class AmadeusClient:
                         "travelerType": "ADULT"
                     }
                 ],
-                "sources": ["GDS"]
+                "sources": ["GDS"],
+                "currencyCode": "USD"  # Request prices in USD
             }
             
             if return_date:
