@@ -16,6 +16,13 @@ try:
 except (ImportError, ValueError):
     EMAIL_AVAILABLE = False
 
+# Try to import itinerary suggestor
+try:
+    from api.utils.itinerary_suggestor import suggest_optimal_itinerary
+    ITINERARY_AVAILABLE = True
+except ImportError:
+    ITINERARY_AVAILABLE = False
+
 
 def run_daily_tracking():
     """Run daily flight tracking and send reports."""
@@ -43,6 +50,14 @@ def run_daily_tracking():
             # Get recent price history
             recent_prices = db.get_all_recent_prices(limit=20)
             
+            # Get itinerary suggestion
+            itinerary_suggestion = None
+            if ITINERARY_AVAILABLE:
+                try:
+                    itinerary_suggestion = suggest_optimal_itinerary(db=db)
+                except Exception as e:
+                    print(f"⚠️  Could not generate itinerary suggestion: {e}")
+            
             # Send report
             email_sent = tracker.email_notifier.send_daily_report(
                 date=today,
@@ -50,7 +65,8 @@ def run_daily_tracking():
                 currency=currency,
                 total_searches=results['total_tracked'],
                 alerts_count=results['alerts_count'],
-                price_history=recent_prices
+                price_history=recent_prices,
+                itinerary_suggestion=itinerary_suggestion
             )
             
             if email_sent:

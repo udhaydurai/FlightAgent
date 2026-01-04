@@ -127,7 +127,8 @@ Alert triggered when price drops by more than $10.
         currency: str,
         total_searches: int,
         alerts_count: int,
-        price_history: List[Dict[str, Any]]
+        price_history: List[Dict[str, Any]],
+        itinerary_suggestion: Optional[Dict[str, Any]] = None
     ) -> MIMEMultipart:
         """Create daily summary email report."""
         msg = MIMEMultipart("alternative")
@@ -147,6 +148,37 @@ Alert triggered when price drops by more than $10.
             </tr>
             """
         
+        # Build itinerary suggestion section
+        itinerary_section = ""
+        if itinerary_suggestion and itinerary_suggestion.get("suggested"):
+            split = itinerary_suggestion.get("split", {})
+            first_city = itinerary_suggestion.get("first_city", "").replace("_", " ").title()
+            second_city = itinerary_suggestion.get("second_city", "").replace("_", " ").title()
+            routing = itinerary_suggestion.get("recommended_routing", "")
+            cherry_info = itinerary_suggestion.get("cherry_blossom_info", {})
+            
+            cherry_blossom_note = ""
+            if cherry_info.get("overlaps_peak_bloom"):
+                cherry_blossom_note = f"""
+                <div style="background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 10px; margin: 10px 0;">
+                  <strong>🌸 Cherry Blossom Peak Bloom Alert!</strong><br>
+                  Your trip overlaps with peak bloom. Consider visiting DC first!
+                </div>
+                """
+            
+            itinerary_section = f"""
+              <div style="background-color: #e8f5e9; padding: 15px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #4caf50;">
+                <h3 style="margin-top: 0; color: #2e7d32;">🗓️ Recommended Itinerary</h3>
+                <p><strong>Routing:</strong> {routing}</p>
+                <p><strong>6-Day Split:</strong></p>
+                <ul>
+                  <li><strong>{first_city}:</strong> {split.get('washington_dc' if 'washington' in first_city.lower() else 'new_york', 0)} days</li>
+                  <li><strong>{second_city}:</strong> {split.get('new_york' if 'washington' in first_city.lower() else 'washington_dc', 0)} days</li>
+                </ul>
+                {cherry_blossom_note}
+              </div>
+            """
+        
         html_body = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -160,6 +192,8 @@ Alert triggered when price drops by more than $10.
                 <p><strong>Total Searches:</strong> {total_searches}</p>
                 <p><strong>Price Drop Alerts:</strong> {alerts_count}</p>
               </div>
+              
+              {itinerary_section}
               
               <h3>Recent Price History</h3>
               <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -258,7 +292,8 @@ Alert triggered when price drops by more than $10.
         currency: str,
         total_searches: int,
         alerts_count: int,
-        price_history: List[Dict[str, Any]]
+        price_history: List[Dict[str, Any]],
+        itinerary_suggestion: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Send daily summary report email."""
         msg = self.create_daily_report_email(
@@ -267,7 +302,8 @@ Alert triggered when price drops by more than $10.
             currency=currency,
             total_searches=total_searches,
             alerts_count=alerts_count,
-            price_history=price_history
+            price_history=price_history,
+            itinerary_suggestion=itinerary_suggestion
         )
         
         return self.send_email(msg)
